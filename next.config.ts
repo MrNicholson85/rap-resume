@@ -5,11 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'coverartarchive.org',
-      },
-      {
-        protocol: 'http',
-        hostname: 'coverartarchive.org',
+        hostname: 'i.scdn.co', // Spotify CDN
       },
     ],
   },

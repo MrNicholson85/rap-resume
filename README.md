@@ -1,33 +1,35 @@
 # 🎤 Rap Resume
 
-A Next.js application that transforms rap artist discographies into professional resume-style documents. Search for any hip-hop artist and view their complete career timeline presented as a polished CV with full album details and track listings.
+A Next.js application that transforms rap artist discographies into professional resume-style documents. Search for any hip-hop artist and view their complete career timeline presented as a polished CV with full album details, track listings, and streaming links.
 
 ## ✨ Features
 
-- 🔍 **Artist Search** - Search for rap artists using MusicBrainz comprehensive database
+- 🔍 **Artist Search** - Search for rap artists using Spotify's comprehensive database
 - 📄 **Resume-Style Layout** - Artist profiles displayed as professional CVs with:
-  - Header section with gradient placeholder for artists (no photos available from MusicBrainz)
-  - Professional summary (biography when available)
-  - Core competencies (genres/tags)
+  - Header section with artist photo from Spotify
+  - Artist statistics (popularity score, follower count)
+  - Core competencies (genres)
   - Discography presented as work experience with vertical timeline
-- 💿 **Complete Discographies** - Full album listings from MusicBrainz (albums only, no EPs/singles)
+- 💿 **Complete Discographies** - Full album listings from Spotify (albums only, no EPs/singles)
 - 🎵 **Album Detail Pages** - Click any album to view:
-  - Large album cover art from Cover Art Archive
-  - Complete track listing with track numbers and durations
-  - Label and release information
-  - **Streaming service links** (Spotify, Apple Music, YouTube, Deezer) when available
+  - High-quality album cover art from Spotify
+  - Complete track listing with track numbers, durations, and featured artists
+  - Album metadata (release year, type, track count)
+  - **Direct streaming links** to:
+    - 🎵 Spotify (direct album link)
+    - 🍎 Apple Music (search link)
+    - ▶️ YouTube (search link)
+    - 🎧 Deezer (search link)
 - 🎨 **Traditional Resume Aesthetics** - Clean white background with blue accents
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
-- ⚡ **Optimized Loading** - Cover art fetched for first 10 albums to balance speed and data completeness
+- ⚡ **Real-time Data** - Always shows current, accurate information from Spotify
 
 ## 🚀 Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **API**: 
-  - MusicBrainz API (artist/album/track data)
-  - Cover Art Archive (album artwork)
+- **API**: Spotify Web API (Client Credentials flow)
 - **Package Manager**: npm
 
 ## 📋 Project Structure
@@ -43,13 +45,15 @@ rap-resume/
 │   │   └── globals.css         # Global styles and Tailwind imports
 │   ├── components/
 │   │   ├── ArtistCard.tsx      # Card component for artist search results
-│   │   ├── AlbumCard.tsx       # Card component (legacy)
 │   │   └── SearchBar.tsx       # Search input with submit handler
 │   └── lib/
-│       └── audiodb.ts          # MusicBrainz API utilities and types
+│       └── audiodb.ts          # Spotify API utilities and types
 ├── public/                     # Static assets
+├── .env.local                  # Environment variables (not in git)
+├── .env.local.example          # Environment variables template
 ├── .github/
 │   └── copilot-instructions.md # GitHub Copilot context
+├── SPOTIFY_SETUP.md            # Spotify API setup guide
 ├── next.config.ts              # Next.js configuration
 ├── package.json
 └── README.md
@@ -61,6 +65,7 @@ rap-resume/
 
 - Node.js 18+ installed
 - npm package manager
+- Spotify Developer account (free)
 
 ### Installation Steps
 
@@ -75,7 +80,19 @@ cd rap-resume
 npm install
 ```
 
-3. Run the development server:
+3. Set up Spotify API credentials:
+   - Follow the detailed instructions in [SPOTIFY_SETUP.md](./SPOTIFY_SETUP.md)
+   - Or quick setup:
+     1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+     2. Create a new app
+     3. Copy your Client ID and Client Secret
+     4. Add them to `.env.local`:
+        ```
+        NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id_here
+        NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET=your_client_secret_here
+        ```
+
+4. Run the development server:
 ```bash
 npm run dev
 ```
@@ -85,21 +102,21 @@ npm run dev
 ## 📖 Usage
 
 1. **Search for an Artist**
-   - Enter a rap artist name in the search bar (e.g., "Eminem", "Kendrick Lamar", "J. Cole")
+   - Enter an artist name in the search bar (e.g., "Eminem", "Kendrick Lamar", "Drake")
    - Click "Search" or press Enter
 
 2. **View Artist Resume**
    - Click on an artist card from the search results
    - View their professional resume including:
-     - Artist photo and basic info
-     - Biography/professional summary
-     - Skills and genres
+     - Artist photo and profile
+     - Popularity score and follower count
+     - Genres and music style
      - Complete discography timeline
 
 3. **Explore Albums**
    - Click on any album in the discography
-   - View album cover art and complete track listing
-   - See track durations and total track count
+   - View high-quality album cover art and complete track listing
+   - Click streaming service buttons to listen on your preferred platform
    - Use the back button to return to the artist resume
 
 ## 🔧 Development Commands
@@ -111,35 +128,27 @@ npm run dev
 
 ## 🎯 API Integration
 
-### MusicBrainz API
+### Spotify Web API
 
-The app uses the MusicBrainz API with the following features:
+The app uses the Spotify Web API with Client Credentials OAuth flow:
 
-- **Rate Limiting**: 1 request per second (built-in throttling)
-- **No API Key Required**: Free and open access
+- **Authentication**: Automatic token management with refresh
 - **Endpoints Used**:
-  - Artist search: `/ws/2/artist?query={name}`
-  - Artist details: `/ws/2/artist/{id}?inc=tags+genres+url-rels`
-  - Albums: `/ws/2/release-group?artist={id}&type=album`
-  - Album details with streaming links: `/ws/2/release/{id}?inc=labels+recordings+url-rels`
-  - Tracks: `/ws/2/release/{id}?inc=recordings`
+  - Artist search: `/v1/search?q={name}&type=artist`
+  - Artist details: `/v1/artists/{id}`
+  - Albums: `/v1/artists/{id}/albums?include_groups=album`
+  - Album details: `/v1/albums/{id}`
+  - Album tracks: `/v1/albums/{id}/tracks`
 
-### Cover Art Archive
+### Streaming Links
 
-- Fetches album artwork from coverartarchive.org
-- Falls back to 💿 icon when artwork is unavailable
-- Optimized to fetch cover art for first 10 albums only
-- Additional albums load with placeholder icon
+Each album includes links to multiple streaming platforms:
+- **Spotify** - Direct album link from Spotify API
+- **Apple Music** - Generated search link based on artist + album name
+- **YouTube** - Generated search link for the album
+- **Deezer** - Generated search link for the album
 
-### Streaming Services
-
-MusicBrainz provides external URL relationships for albums, which may include:
-- **Spotify** - Direct album links
-- **Apple Music** - Album pages
-- **YouTube** - Album playlists or full album videos
-- **Deezer** - Streaming links
-
-*Note: Availability depends on data contributed to MusicBrainz database*
+All streaming links are functional and lead directly to the album or search results on each platform.
 
 ## 🎨 Design Specifications
 
@@ -149,6 +158,11 @@ MusicBrainz provides external URL relationships for albums, which may include:
 - **Text Primary**: `#111827` (gray-900)
 - **Text Secondary**: `#4B5563` (gray-600)
 - **Card Background**: `#FFFFFF` (white)
+- **Streaming Buttons**:
+  - Spotify: Green (`#16A34A`)
+  - Apple Music: Pink (`#DB2777`)
+  - YouTube: Red (`#DC2626`)
+  - Deezer: Purple (`#9333EA`)
 
 ### Typography
 - **Headings**: Bold, clear hierarchy
@@ -160,25 +174,24 @@ MusicBrainz provides external URL relationships for albums, which may include:
 - **Card Grid**: 3-column responsive grid for search results
 - **Resume Document**: Single column, max-width 4xl, white background with shadow
 - **Hover States**: Gray background on album entries, blue text on titles
-- **Artist Placeholders**: Gradient background (blue to purple) with microphone emoji
+- **Artist Photos**: High-quality images from Spotify with gradient fallback
 
 ## 🔑 Key Components
 
 ### Artist Resume View
 ```typescript
-- Header: Gradient placeholder or photo, name, genre, location, active years
-- Professional Summary: Biography text (when available)
-- Core Competencies: Genre/tag pills with blue styling
+- Header: Artist photo, name, genres, popularity, follower count
+- Core Competencies: Genre pills with blue styling
 - Discography: Chronological timeline with clickable album entries
 ```
 
 ### Album Detail Page
 ```typescript
-- Album cover (264x264px) or disc placeholder
-- Album metadata (title, year, label, type)
+- Album cover (high-res from Spotify)
+- Album metadata (title, year, artist, type, track count)
 - Streaming service buttons (Spotify, Apple Music, YouTube, Deezer)
-- Track listing (number, title, duration)
-- Total track count
+- Track listing (number, title, duration, featured artists)
+- Explicit content indicators
 ```
 
 ### API Functions
@@ -192,24 +205,23 @@ getAlbumTracks(albumId: string): Promise<Track[]>
 
 ## 🚧 Known Limitations
 
-- **Rate Limiting**: MusicBrainz API allows 1 request/second (may cause slower loading for albums)
-- **Data Completeness**: Some artists may have incomplete data in MusicBrainz
-- **Cover Art**: Only first 10 albums fetch cover art to improve performance; others show placeholder
-- **Artist Photos**: MusicBrainz doesn't provide artist images; gradient placeholders used instead
-- **Biography**: Not all artists have biography text in MusicBrainz
-- **Streaming Links**: Availability varies by album; depends on MusicBrainz contributor data
+- **API Rate Limits**: Spotify API has rate limits; excessive requests may be throttled
+- **Authentication**: Uses Client Credentials flow (public data only, no user-specific data)
+- **Album Filtering**: Only shows albums (not EPs, singles, or compilations) for cleaner results
+- **Market Restrictions**: Some content may vary by region (using US market by default)
 
 ## 🔮 Future Enhancements
 
-- [ ] Add search filters (genre, country, year)
-- [ ] Implement artist image fetching from Last.fm or other sources (requires API key)
-- [ ] Lazy load cover art for albums beyond the first 10
-- [ ] Add album reviews/ratings from external sources
+- [ ] Add search filters (genre, popularity, year)
+- [ ] Implement pagination for large discographies
+- [ ] Add album reviews/ratings
 - [ ] Export resume as PDF
 - [ ] Share resume via URL
-- [ ] Add music video links in track listings
 - [ ] Include related artists section
 - [ ] Dark mode toggle
+- [ ] Play preview clips directly in the app
+- [ ] Add top tracks section for artists
+- [ ] Include artist biography from additional sources
 - [ ] Cache API responses for faster subsequent loads
 
 ## 📝 License

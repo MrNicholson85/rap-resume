@@ -1,113 +1,125 @@
-// MusicBrainz API utilities
-const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2';
-const COVER_ART_API_URL = 'https://coverartarchive.org';
-const USER_AGENT = 'RapResume/1.0.0 (https://github.com/yourusername/rap-resume)';
+// Spotify API utilities
+const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+const SPOTIFY_ACCOUNTS_URL = 'https://accounts.spotify.com/api/token';
 
-// Rate limiting: MusicBrainz allows 1 request/second
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 1000; // 1 second
+// Token management
+let accessToken: string | null = null;
+let tokenExpiresAt: number = 0;
 
-async function rateLimitedFetch(url: string): Promise<Response> {
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest));
+async function getSpotifyToken(): Promise<string> {
+  // Check if we have a valid token
+  if (accessToken && Date.now() < tokenExpiresAt) {
+    return accessToken;
   }
-  
-  lastRequestTime = Date.now();
+
+  // Get credentials from environment variables
+  const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Spotify credentials not configured. Please set NEXT_PUBLIC_SPOTIFY_CLIENT_ID and NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET in .env.local');
+  }
+
+  // Request new token using Client Credentials flow
+  const response = await fetch(SPOTIFY_ACCOUNTS_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+    },
+    body: 'grant_type=client_credentials'
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get Spotify access token');
+  }
+
+  const data = await response.json();
+  accessToken = data.access_token;
+  tokenExpiresAt = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 min before expiry
+
+  return accessToken;
+}
+
+async function spotifyFetch(url: string): Promise<Response> {
+  const token = await getSpotifyToken();
   return fetch(url, {
     headers: {
-      'User-Agent': USER_AGENT,
+      'Authorization': `Bearer ${token}`,
       'Accept': 'application/json'
     }
   });
 }
 
-// MusicBrainz Interfaces
+// Spotify Interfaces
 export interface Artist {
   id: string;
   name: string;
   type?: string;
-  'type-id'?: string;
-  disambiguation?: string;
-  country?: string;
-  'life-span'?: {
-    begin?: string;
-    end?: string;
-    ended?: boolean;
-  };
-  area?: {
-    id: string;
-    name: string;
-  };
-  'begin-area'?: {
-    id: string;
-    name: string;
-  };
-  tags?: Array<{
-    count: number;
-    name: string;
+  genres?: string[];
+  popularity?: number;
+  images?: Array<{
+    url: string;
+    height: number;
+    width: number;
   }>;
-  genres?: Array<{
-    count: number;
-    name: string;
-  }>;
-  // Custom fields for display
-  imageUrl?: string;
-  bio?: string;
+  external_urls?: {
+    spotify?: string;
+  };
+  followers?: {
+    total: number;
+  };
 }
 
 export interface Album {
   id: string;
   title: string;
-  'first-release-date'?: string;
-  'primary-type'?: string; // Album, EP, Single, etc.
-  'primary-type-id'?: string;
-  'secondary-types'?: string[];
-  'secondary-type-ids'?: string[];
-  disambiguation?: string;
-  'artist-credit'?: Array<{
-    name: string;
-    artist: {
-      id: string;
-      name: string;
-    };
+  name?: string; // Spotify uses 'name' instead of 'title'
+  album_type?: string; // album, single, compilation
+  release_date?: string;
+  total_tracks?: number;
+  images?: Array<{
+    url: string;
+    height: number;
+    width: number;
   }>;
-  'release-group'?: {
+  artists?: Array<{
     id: string;
-    'primary-type'?: string;
+    name: string;
+    external_urls?: {
+      spotify?: string;
+    };
+  }>;
+  external_urls?: {
+    spotify?: string;
   };
-  // Additional info from release lookup
-  'label-info'?: Array<{
-    'catalog-number'?: string;
-    label?: {
-      id: string;
-      name: string;
-    };
-  }>;
-  media?: Array<{
-    format?: string;
-    'track-count'?: number;
-    tracks?: Track[];
-  }>;
-  relations?: Array<{
-    type: string;
-    url?: {
-      resource: string;
-      id: string;
-    };
-  }>;
-  // Custom fields
-  coverArtUrl?: string;
   year?: string;
+  coverArtUrl?: string;
   streamingLinks?: {
     spotify?: string;
     appleMusic?: string;
     youtube?: string;
     deezer?: string;
-    [key: string]: string | undefined;
   };
+}
+
+export interface Track {
+  id: string;
+  name: string;
+  title?: string; // For compatibility
+  track_number?: number;
+  duration_ms?: number;
+  explicit?: boolean;
+  preview_url?: string;
+  external_urls?: {
+    spotify?: string;
+  };
+  artists?: Array<{
+    id: string;
+    name: string;
+  }>;
+  position?: number;
+  length?: number; // For compatibility with old code
 }
 
 export interface Track {
@@ -115,64 +127,44 @@ export interface Track {
   title: string;
   length?: number; // in milliseconds
   position?: number;
-  number?: string;
-  recording?: {
-    id: string;
-    title: string;
-    length?: number;
-  };
-}
-
-export interface Track {
-  id: string;
-  title: string;
-  length?: number; // in milliseconds
   position?: number;
-  number?: string;
-  recording?: {
-    id: string;
-    title: string;
-    length?: number;
-  };
+  length?: number; // For compatibility with old code
 }
 
-// Helper function to get cover art from Cover Art Archive
-async function getCoverArt(releaseId: string): Promise<string | undefined> {
-  try {
-    const response = await fetch(`${COVER_ART_API_URL}/release/${releaseId}`);
-    if (!response.ok) return undefined;
-    
-    const data = await response.json();
-    // Get the front cover or first image
-    const frontCover = data.images?.find((img: any) => img.front) || data.images?.[0];
-    return frontCover?.thumbnails?.large || frontCover?.image;
-  } catch (error) {
-    return undefined;
-  }
+// Helper function to generate streaming search URLs
+function generateStreamingLinks(artistName: string, albumName: string): Album['streamingLinks'] {
+  const encodedArtist = encodeURIComponent(artistName);
+  const encodedAlbum = encodeURIComponent(albumName);
+  const query = encodeURIComponent(`${artistName} ${albumName}`);
+  
+  return {
+    appleMusic: `https://music.apple.com/us/search?term=${query}`,
+    youtube: `https://www.youtube.com/results?search_query=${query}`,
+    deezer: `https://www.deezer.com/search/${query}`
+  };
 }
 
 export async function searchArtists(artistName: string): Promise<Artist[]> {
-  const response = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/artist?query=${encodeURIComponent(artistName)}&fmt=json&limit=10`
+  const response = await spotifyFetch(
+    `${SPOTIFY_API_URL}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=10`
   );
   const data = await response.json();
   
-  return data.artists?.map((artist: any) => ({
+  return data.artists?.items?.map((artist: any) => ({
     id: artist.id,
     name: artist.name,
     type: artist.type,
-    disambiguation: artist.disambiguation,
-    country: artist.country || artist.area?.name,
-    'life-span': artist['life-span'],
-    area: artist.area,
-    tags: artist.tags,
-    genres: artist.genres
+    genres: artist.genres,
+    popularity: artist.popularity,
+    images: artist.images,
+    external_urls: artist.external_urls,
+    followers: artist.followers
   })) || [];
 }
 
 export async function getArtistDetails(artistId: string): Promise<Artist | null> {
-  const response = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/artist/${artistId}?fmt=json&inc=tags+genres+url-rels`
+  const response = await spotifyFetch(
+    `${SPOTIFY_API_URL}/artists/${artistId}`
   );
   const data = await response.json();
   
@@ -180,67 +172,48 @@ export async function getArtistDetails(artistId: string): Promise<Artist | null>
     id: data.id,
     name: data.name,
     type: data.type,
-    disambiguation: data.disambiguation,
-    country: data.country || data.area?.name,
-    'life-span': data['life-span'],
-    area: data.area,
-    'begin-area': data['begin-area'],
-    tags: data.tags,
-    genres: data.genres
+    genres: data.genres,
+    popularity: data.popularity,
+    images: data.images,
+    external_urls: data.external_urls,
+    followers: data.followers
   };
 }
 
 export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   try {
-    const response = await rateLimitedFetch(
-      `${MUSICBRAINZ_API_URL}/release-group?artist=${artistId}&fmt=json&limit=100&type=album`
+    // Get all albums (excluding singles and compilations for cleaner results)
+    const response = await spotifyFetch(
+      `${SPOTIFY_API_URL}/artists/${artistId}/albums?include_groups=album&limit=50&market=US`
     );
     const data = await response.json();
     
-    console.log('MusicBrainz Albums Response:', data);
-    console.log('Number of releases found:', data['release-groups']?.length || 0);
+    console.log('Spotify Albums Response:', data);
+    console.log('Number of albums found:', data.items?.length || 0);
     
-    const albums: Album[] = data['release-groups']?.map((rg: any) => ({
-      id: rg.id,
-      title: rg.title,
-      'first-release-date': rg['first-release-date'],
-      'primary-type': rg['primary-type'],
-      'secondary-types': rg['secondary-types'],
-      disambiguation: rg.disambiguation,
-      year: rg['first-release-date']?.split('-')[0]
+    const albums: Album[] = data.items?.map((album: any) => ({
+      id: album.id,
+      title: album.name,
+      name: album.name,
+      album_type: album.album_type,
+      release_date: album.release_date,
+      total_tracks: album.total_tracks,
+      images: album.images,
+      artists: album.artists,
+      external_urls: album.external_urls,
+      year: album.release_date?.split('-')[0],
+      coverArtUrl: album.images?.[0]?.url,
+      streamingLinks: {
+        spotify: album.external_urls?.spotify,
+        ...generateStreamingLinks(album.artists?.[0]?.name || '', album.name)
+      }
     })).filter((album: Album) => {
-      // Filter out albums without a valid release date (TBD, NA, or missing)
-      const releaseDate = album['first-release-date'];
-      return releaseDate && 
-             releaseDate !== 'TBD' && 
-             releaseDate !== 'NA' && 
-             releaseDate.trim() !== '' &&
+      // Filter out albums without a valid release date
+      return album.release_date && 
+             album.release_date.trim() !== '' &&
              album.year && 
              !isNaN(parseInt(album.year));
     }) || [];
-    
-    // Fetch cover art for the first 10 albums to speed up initial load
-    const albumsToFetch = albums.slice(0, 10);
-    
-    for (const album of albumsToFetch) {
-      try {
-        const releaseResponse = await rateLimitedFetch(
-          `${MUSICBRAINZ_API_URL}/release?release-group=${album.id}&fmt=json&limit=1`
-        );
-        const releaseData = await releaseResponse.json();
-        const releaseId = releaseData.releases?.[0]?.id;
-        
-        if (releaseId) {
-          const coverArt = await getCoverArt(releaseId);
-          if (coverArt) {
-            album.coverArtUrl = coverArt;
-            console.log('Cover art found for:', album.title, coverArt);
-          }
-        }
-      } catch (error) {
-        console.log('Error fetching cover art for', album.title, error);
-      }
-    }
     
     return albums;
   } catch (error) {
@@ -250,105 +223,50 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
 }
 
 export async function getAlbumTracks(albumId: string): Promise<Track[]> {
-  // Get the first release for this release-group
-  const releaseResponse = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/release?release-group=${albumId}&fmt=json&limit=1&inc=recordings`
-  );
-  const releaseData = await releaseResponse.json();
-  const releaseId = releaseData.releases?.[0]?.id;
-  
-  if (!releaseId) return [];
-  
-  // Get full release details with tracks
-  const response = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/release/${releaseId}?fmt=json&inc=recordings`
+  const response = await spotifyFetch(
+    `${SPOTIFY_API_URL}/albums/${albumId}/tracks`
   );
   const data = await response.json();
   
-  const tracks: Track[] = [];
-  data.media?.forEach((medium: any) => {
-    medium.tracks?.forEach((track: any) => {
-      tracks.push({
-        id: track.id,
-        title: track.title,
-        length: track.length,
-        position: track.position,
-        number: track.number,
-        recording: track.recording
-      });
-    });
-  });
-  
-  return tracks;
+  return data.items?.map((track: any, index: number) => ({
+    id: track.id,
+    name: track.name,
+    title: track.name, // For compatibility
+    track_number: track.track_number,
+    duration_ms: track.duration_ms,
+    length: track.duration_ms, // For compatibility
+    explicit: track.explicit,
+    preview_url: track.preview_url,
+    external_urls: track.external_urls,
+    artists: track.artists,
+    position: index + 1
+  })) || [];
 }
 
 export async function getAlbumDetails(albumId: string): Promise<Album | null> {
-  // Get the first release for this release-group
-  const releaseResponse = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/release?release-group=${albumId}&fmt=json&limit=1&inc=labels+recordings+url-rels+release-group-level-rels`
+  const response = await spotifyFetch(
+    `${SPOTIFY_API_URL}/albums/${albumId}`
   );
-  const releaseData = await releaseResponse.json();
-  const release = releaseData.releases?.[0];
+  const data = await response.json();
   
-  if (!release) {
-    console.log('No release found for release-group:', albumId);
-    return null;
-  }
-  
-  console.log('Full release data:', JSON.stringify(release, null, 2));
-  console.log('Release relations:', release.relations);
-  
-  const coverArtUrl = await getCoverArt(release.id);
-  
-  // Parse streaming links from URL relationships
-  const streamingLinks: Album['streamingLinks'] = {};
-  
-  // Check both release-level and release-group-level relations
-  const allRelations = [
-    ...(release.relations || []),
-  ];
-  
-  console.log('All relations to check:', allRelations);
-  
-  if (allRelations.length > 0) {
-    allRelations.forEach((rel: any) => {
-      console.log('Checking relation:', {
-        type: rel.type,
-        'type-id': rel['type-id'],
-        url: rel.url,
-        targetType: rel['target-type']
-      });
-      
-      // Check for URL relations
-      if (rel.url?.resource) {
-        const url = rel.url.resource;
-        console.log('Found URL:', url);
-        if (url.includes('spotify.com')) {
-          streamingLinks.spotify = url;
-        } else if (url.includes('music.apple.com') || url.includes('itunes.apple.com')) {
-          streamingLinks.appleMusic = url;
-        } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          streamingLinks.youtube = url;
-        } else if (url.includes('deezer.com')) {
-          streamingLinks.deezer = url;
-        }
-      }
-    });
-  } else {
-    console.log('No relations found in release');
-  }
-  
-  console.log('Final parsed streaming links:', streamingLinks);
+  const artistName = data.artists?.[0]?.name || '';
+  const albumName = data.name;
   
   return {
-    id: release.id,
-    title: release.title,
-    'first-release-date': release.date,
-    'label-info': release['label-info'],
-    media: release.media,
-    relations: release.relations,
-    coverArtUrl,
-    year: release.date?.split('-')[0],
-    streamingLinks: Object.keys(streamingLinks).length > 0 ? streamingLinks : undefined
+    id: data.id,
+    title: data.name,
+    name: data.name,
+    album_type: data.album_type,
+    release_date: data.release_date,
+    total_tracks: data.total_tracks,
+    images: data.images,
+    artists: data.artists,
+    external_urls: data.external_urls,
+    year: data.release_date?.split('-')[0],
+    coverArtUrl: data.images?.[0]?.url,
+    streamingLinks: {
+      spotify: data.external_urls?.spotify,
+      ...generateStreamingLinks(artistName, albumName)
+    }
   };
 }
