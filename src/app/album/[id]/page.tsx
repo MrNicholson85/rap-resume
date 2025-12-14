@@ -178,11 +178,11 @@ export default function AlbumPage() {
                   >
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 font-semibold w-8 text-right">
-                        {track.position || track.number || '—'}
+                        {track.track_number || track.position || '—'}
                       </span>
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          {track.title || track.name}
+                          {track.name || track.title}
                         </h3>
                         {track.artists && track.artists.length > 0 && (
                           <p className="text-sm text-gray-500">

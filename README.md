@@ -224,16 +224,26 @@ getAlbumTracks(albumId: string): Promise<Track[]>
 - [ ] Include artist biography from additional sources
 - [ ] Cache API responses for faster subsequent loads
 
-## 📝 License
+## � Deployment
+
+Ready to deploy? See the [Deployment Guide](./DEPLOYMENT.md) for step-by-step instructions on deploying to Vercel.
+
+**Quick Deploy:**
+1. Push your code to GitHub
+2. Import to [Vercel](https://vercel.com)
+3. Add your Spotify environment variables
+4. Deploy!
+
+## �📝 License
 
 This project is open source and available under the MIT License.
 
 ## 🙏 Credits
 
-- **MusicBrainz**: Open music encyclopedia providing artist/album data
-- **Cover Art Archive**: Album artwork repository
+- **Spotify**: Music data and streaming platform
 - **Next.js**: React framework
 - **Tailwind CSS**: Utility-first CSS framework
+- **Vercel**: Deployment platform
 
 ---
 
