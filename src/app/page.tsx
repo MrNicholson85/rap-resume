@@ -1,64 +1,305 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import SearchBar from '@/components/SearchBar';
+import ArtistCard from '@/components/ArtistCard';
+import AlbumCard from '@/components/AlbumCard';
+import { searchArtists, getArtistAlbums, Artist, Album } from '@/lib/audiodb';
 
 export default function Home() {
+  const router = useRouter();
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setLoading(true);
+    setSelectedArtist(null);
+    setAlbums([]);
+    try {
+      const results = await searchArtists(query);
+      setArtists(results);
+    } catch (error) {
+      console.error('Error searching artists:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleArtistClick = async (artist: Artist) => {
+    setSelectedArtist(artist);
+    setLoading(true);
+    try {
+      console.log('Fetching albums for artist:', artist.name, 'ID:', artist.id);
+      const artistAlbums = await getArtistAlbums(artist.id);
+      console.log('Albums received:', artistAlbums.length);
+      setAlbums(artistAlbums);
+    } catch (error) {
+      console.error('Error fetching albums:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAlbumClick = (album: Album) => {
+    // Store album info in sessionStorage for the album page
+    sessionStorage.setItem(`album-${album.id}`, JSON.stringify(album));
+    router.push(`/album/${album.id}`);
+  };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              🎤 Rap Resume
+            </h1>
+            <p className="text-gray-600 text-lg mb-8">
+              Professional artist discographies and career timelines
+            </p>
+            <div className="w-full max-w-2xl mx-auto">
+              <div className="flex gap-2">
+                <div className="flex-1 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg"></div>
+                <div className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md">
+                  Search
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            🎤 Rap Resume
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-gray-600 text-lg mb-8">
+            Professional artist discographies and career timelines
           </p>
+          <SearchBar onSearch={handleSearch} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {loading && (
+          <div className="text-center text-gray-700 text-xl">Loading...</div>
+        )}
+
+        {selectedArtist && (
+          <div className="mb-12">
+            <button
+              onClick={() => {
+                setSelectedArtist(null);
+                setAlbums([]);
+              }}
+              className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            >
+              ← Back to Search Results
+            </button>
+            
+            {/* Resume Document */}
+            <div className="bg-white shadow-lg max-w-4xl mx-auto">
+              {/* Header Section */}
+              <div className="border-b-4 border-blue-600 p-8">
+                <div className="flex items-start gap-6">
+                  {selectedArtist.imageUrl ? (
+                    <img
+                      src={selectedArtist.imageUrl}
+                      alt={selectedArtist.name}
+                      className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-blue-100 border-4 border-blue-600 flex items-center justify-center text-5xl">
+                      🎤
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                      {selectedArtist.name}
+                    </h1>
+                    {selectedArtist.disambiguation && (
+                      <p className="text-gray-500 text-sm italic mb-2">{selectedArtist.disambiguation}</p>
+                    )}
+                    <p className="text-xl text-blue-600 mb-3">
+                      {selectedArtist.genres?.[0]?.name || selectedArtist.tags?.[0]?.name || selectedArtist.type || 'Artist'}
+                    </p>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      {selectedArtist.country && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">📍</span> {selectedArtist.country}
+                        </div>
+                      )}
+                      {selectedArtist['life-span']?.begin && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">📅</span> Active since {selectedArtist['life-span'].begin.split('-')[0]}
+                        </div>
+                      )}
+                      {selectedArtist.type && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">🎵</span> {selectedArtist.type}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Summary */}
+              {selectedArtist.bio && (
+                <div className="p-8 border-b">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-blue-600"></span>
+                    Professional Summary
+                  </h2>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedArtist.bio.substring(0, 600)}...
+                  </p>
+                </div>
+              )}
+
+              {/* Skills Section */}
+              <div className="p-8 border-b bg-gray-50">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-blue-600"></span>
+                  Core Competencies
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {selectedArtist.genres?.slice(0, 5).map((genre) => (
+                    <span key={`genre-${genre.name}`} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {genre.name}
+                    </span>
+                  ))}
+                  {selectedArtist.tags?.slice(0, 5).map((tag) => (
+                    <span key={`tag-${tag.name}`} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {tag.name}
+                    </span>
+                  ))}
+                  {selectedArtist.type && (
+                    <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {selectedArtist.type}
+                    </span>
+                  )}
+                  <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    Recording Artist
+                  </span>
+                  <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    Music Production
+                  </span>
+                </div>
+              </div>
+
+              {/* Professional Experience (Albums) */}
+              {albums.length > 0 && (
+                <div className="p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-blue-600"></span>
+                    Discography
+                  </h2>
+                  <div className="space-y-6">
+                    {albums
+                      .sort((a, b) => (b.year || '0').localeCompare(a.year || '0'))
+                      .map((album) => (
+                      <div 
+                        key={album.id} 
+                        className="flex gap-4 pb-6 border-b last:border-b-0 hover:bg-gray-50 -mx-4 px-4 py-2 rounded cursor-pointer transition-colors"
+                        onClick={() => handleAlbumClick(album)}
+                      >
+                        {/* Timeline dot */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-3 h-3 bg-blue-600 rounded-full mt-2"></div>
+                          <div className="w-0.5 h-full bg-blue-200 mt-2"></div>
+                        </div>
+                        
+                        {/* Album Thumbnail */}
+                        {album.coverArtUrl ? (
+                          <img
+                            src={album.coverArtUrl}
+                            alt={album.title}
+                            className="w-20 h-20 rounded object-cover shadow-md"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 rounded bg-gray-200 flex items-center justify-center text-3xl shadow-md">
+                            💿
+                          </div>
+                        )}
+                        
+                        {/* Album Details */}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+                                {album.title}
+                              </h3>
+                              {album['label-info']?.[0]?.label?.name && (
+                                <p className="text-blue-600 font-medium">
+                                  {album['label-info'][0].label.name}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-gray-600 font-semibold">
+                                {album.year || 'TBA'}
+                              </p>
+                              {album['primary-type'] && (
+                                <p className="text-sm text-gray-500">
+                                  {album['primary-type']}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {album.disambiguation && (
+                            <p className="text-gray-700 text-sm leading-relaxed mt-2 italic">
+                              {album.disambiguation}
+                            </p>
+                          )}
+                          {album.media?.[0] && (
+                            <p className="text-gray-600 text-sm mt-2">
+                              <span className="font-semibold">Tracks:</span> {album.media[0]['track-count'] || 'N/A'}
+                              {album.media[0].format && ` • ${album.media[0].format}`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!selectedArtist && artists.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Search Results</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {artists.map((artist) => (
+                <ArtistCard
+                  key={artist.idArtist}
+                  artist={artist}
+                  onClick={() => handleArtistClick(artist)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!selectedArtist && !loading && artists.length === 0 && (
+          <div className="text-center text-gray-600 mt-12">
+            <p className="text-xl">Search for your favorite rap artists to get started!</p>
+            <p className="mt-4">Try searching for: Eminem, Kendrick Lamar, J. Cole, or Drake</p>
+          </div>
+        )}
       </main>
     </div>
   );
