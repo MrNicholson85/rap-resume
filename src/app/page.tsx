@@ -130,9 +130,6 @@ export default function Home() {
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       {selectedArtist.name}
                     </h1>
-                    {selectedArtist.disambiguation && (
-                      <p className="text-gray-500 text-sm italic mb-2">{selectedArtist.disambiguation}</p>
-                    )}
                     <p className="text-xl text-blue-600 mb-3">
                       {selectedArtist.genres?.[0] || selectedArtist.type || 'Artist'}
                     </p>
