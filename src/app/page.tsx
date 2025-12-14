@@ -115,9 +115,9 @@ export default function Home() {
               {/* Header Section */}
               <div className="border-b-4 border-blue-600 p-8">
                 <div className="flex items-start gap-6">
-                  {selectedArtist.imageUrl ? (
+                  {selectedArtist.images && selectedArtist.images.length > 0 ? (
                     <img
-                      src={selectedArtist.imageUrl}
+                      src={selectedArtist.images[0].url}
                       alt={selectedArtist.name}
                       className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
                     />
@@ -134,17 +134,17 @@ export default function Home() {
                       <p className="text-gray-500 text-sm italic mb-2">{selectedArtist.disambiguation}</p>
                     )}
                     <p className="text-xl text-blue-600 mb-3">
-                      {selectedArtist.genres?.[0]?.name || selectedArtist.tags?.[0]?.name || selectedArtist.type || 'Artist'}
+                      {selectedArtist.genres?.[0] || selectedArtist.type || 'Artist'}
                     </p>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                      {selectedArtist.country && (
+                      {selectedArtist.popularity && (
                         <div className="flex items-center gap-1">
-                          <span className="font-semibold">📍</span> {selectedArtist.country}
+                          <span className="font-semibold">⭐</span> Popularity: {selectedArtist.popularity}/100
                         </div>
                       )}
-                      {selectedArtist['life-span']?.begin && (
+                      {selectedArtist.followers?.total && (
                         <div className="flex items-center gap-1">
-                          <span className="font-semibold">📅</span> Active since {selectedArtist['life-span'].begin.split('-')[0]}
+                          <span className="font-semibold">👥</span> {selectedArtist.followers.total.toLocaleString()} followers
                         </div>
                       )}
                       {selectedArtist.type && (
@@ -177,14 +177,9 @@ export default function Home() {
                   Core Competencies
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {selectedArtist.genres?.slice(0, 5).map((genre) => (
-                    <span key={`genre-${genre.name}`} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      {genre.name}
-                    </span>
-                  ))}
-                  {selectedArtist.tags?.slice(0, 5).map((tag) => (
-                    <span key={`tag-${tag.name}`} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      {tag.name}
+                  {selectedArtist.genres?.slice(0, 8).map((genre) => (
+                    <span key={`genre-${genre}`} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {genre}
                     </span>
                   ))}
                   {selectedArtist.type && (

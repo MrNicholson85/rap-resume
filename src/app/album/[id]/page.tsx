@@ -32,12 +32,7 @@ export default function AlbumPage() {
         
         // Merge with stored album info
         if (fullAlbumDetails) {
-          console.log('Full album details:', fullAlbumDetails);
-          console.log('Streaming links from API:', fullAlbumDetails.streamingLinks);
-          const mergedInfo = { ...prev, ...fullAlbumDetails };
-          console.log('Merged album info:', mergedInfo);
-          console.log('streamingLinks in merged:', mergedInfo.streamingLinks);
-          setAlbumInfo(mergedInfo);
+          setAlbumInfo(prev => ({ ...prev, ...fullAlbumDetails }));
         }
       } catch (error) {
         console.error('Error fetching album data:', error);
@@ -88,33 +83,30 @@ export default function AlbumPage() {
               {/* Album Info */}
               <div className="flex-1">
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                  {albumInfo?.title || 'Loading...'}
+                  {albumInfo?.title || albumInfo?.name || 'Loading...'}
                 </h1>
                 {albumInfo?.year && (
                   <p className="text-xl text-blue-600 mb-3">
                     {albumInfo.year}
                   </p>
                 )}
-                {albumInfo?.disambiguation && (
-                  <p className="text-gray-500 italic mb-3">
-                    {albumInfo.disambiguation}
+                {albumInfo?.artists && albumInfo.artists.length > 0 && (
+                  <p className="text-gray-600 text-lg mb-3">
+                    <span className="font-semibold">Artist:</span> {albumInfo.artists.map(a => a.name).join(', ')}
                   </p>
                 )}
-                {albumInfo?.['label-info']?.[0]?.label?.name && (
+                {albumInfo?.album_type && (
                   <p className="text-gray-600">
-                    <span className="font-semibold">Label:</span> {albumInfo['label-info'][0].label.name}
+                    <span className="font-semibold">Type:</span> {albumInfo.album_type}
                   </p>
                 )}
-                {albumInfo?.['primary-type'] && (
+                {albumInfo?.total_tracks && (
                   <p className="text-gray-600">
-                    <span className="font-semibold">Type:</span> {albumInfo['primary-type']}
+                    <span className="font-semibold">Tracks:</span> {albumInfo.total_tracks}
                   </p>
                 )}
                 
                 {/* Streaming Links */}
-                {console.log('Checking streaming links...', albumInfo?.streamingLinks)}
-                {console.log('Has streamingLinks?', !!albumInfo?.streamingLinks)}
-                {console.log('Keys length:', albumInfo?.streamingLinks ? Object.keys(albumInfo.streamingLinks).length : 0)}
                 {albumInfo?.streamingLinks && Object.keys(albumInfo.streamingLinks).length > 0 && (
                   <div className="mt-4">
                     <p className="text-gray-600 font-semibold mb-2">Listen on:</p>
@@ -190,12 +182,17 @@ export default function AlbumPage() {
                       </span>
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          {track.title}
+                          {track.title || track.name}
                         </h3>
+                        {track.artists && track.artists.length > 0 && (
+                          <p className="text-sm text-gray-500">
+                            {track.artists.map(a => a.name).join(', ')}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <span className="text-gray-600 text-sm">
-                      {formatDuration(track.length || track.recording?.length)}
+                      {formatDuration(track.length || track.duration_ms)}
                     </span>
                   </div>
                 ))}
