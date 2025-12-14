@@ -154,19 +154,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Professional Summary */}
-              {selectedArtist.bio && (
-                <div className="p-8 border-b">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="w-1 h-6 bg-blue-600"></span>
-                    Professional Summary
-                  </h2>
-                  <p className="text-gray-700 leading-relaxed">
-                    {selectedArtist.bio.substring(0, 600)}...
-                  </p>
-                </div>
-              )}
-
               {/* Skills Section */}
               <div className="p-8 border-b bg-gray-50">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
