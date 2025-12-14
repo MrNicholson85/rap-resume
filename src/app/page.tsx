@@ -65,11 +65,13 @@ export default function Home() {
             <p className="text-gray-600 text-lg mb-8">
               Professional artist discographies and career timelines
             </p>
-            <div className="w-full max-w-2xl mx-auto">
-              <div className="flex gap-2">
-                <div className="flex-1 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg"></div>
-                <div className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md">
-                  Search
+            <div className="flex justify-center">
+              <div className="w-full max-w-2xl mx-auto">
+                <div className="flex gap-2">
+                  <div className="flex-1 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg"></div>
+                  <div className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md">
+                    Search
+                  </div>
                 </div>
               </div>
             </div>
@@ -120,7 +122,7 @@ export default function Home() {
                       className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
                     />
                   ) : (
-                    <div className="w-32 h-32 rounded-full bg-blue-100 border-4 border-blue-600 flex items-center justify-center text-5xl">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-4 border-blue-600 flex items-center justify-center text-5xl">
                       🎤
                     </div>
                   )}
@@ -285,7 +287,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {artists.map((artist) => (
                 <ArtistCard
-                  key={artist.idArtist}
+                  key={artist.id}
                   artist={artist}
                   onClick={() => handleArtistClick(artist)}
                 />

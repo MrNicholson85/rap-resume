@@ -14,7 +14,7 @@ export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
       className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-blue-500"
       onClick={onClick}
     >
-      <div className="relative h-48 bg-gray-100">
+      <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
         {artist.imageUrl ? (
           <Image
             src={artist.imageUrl}
@@ -24,10 +24,10 @@ export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-white">
             <div className="text-center">
-              <div className="text-6xl mb-2">🎤</div>
-              <div className="text-sm">{artist.name}</div>
+              <div className="text-7xl mb-2">🎤</div>
+              <div className="text-sm font-semibold px-4">{artist.name}</div>
             </div>
           </div>
         )}

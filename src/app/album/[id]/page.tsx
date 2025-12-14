@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getAlbumTracks, Album, Track } from '@/lib/audiodb';
+import { getAlbumTracks, getAlbumDetails, Album, Track } from '@/lib/audiodb';
 
 export default function AlbumPage() {
   const params = useParams();
@@ -20,19 +20,33 @@ export default function AlbumPage() {
       setAlbumInfo(JSON.parse(storedAlbum));
     }
 
-    // Fetch tracks
-    const fetchTracks = async () => {
+    // Fetch full album details including streaming links
+    const fetchAlbumData = async () => {
       try {
-        const albumTracks = await getAlbumTracks(albumId);
+        const [albumTracks, fullAlbumDetails] = await Promise.all([
+          getAlbumTracks(albumId),
+          getAlbumDetails(albumId)
+        ]);
+        
         setTracks(albumTracks);
+        
+        // Merge with stored album info
+        if (fullAlbumDetails) {
+          console.log('Full album details:', fullAlbumDetails);
+          console.log('Streaming links from API:', fullAlbumDetails.streamingLinks);
+          const mergedInfo = { ...prev, ...fullAlbumDetails };
+          console.log('Merged album info:', mergedInfo);
+          console.log('streamingLinks in merged:', mergedInfo.streamingLinks);
+          setAlbumInfo(mergedInfo);
+        }
       } catch (error) {
-        console.error('Error fetching tracks:', error);
+        console.error('Error fetching album data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTracks();
+    fetchAlbumData();
   }, [albumId]);
 
   const formatDuration = (ms?: number) => {
@@ -95,6 +109,58 @@ export default function AlbumPage() {
                   <p className="text-gray-600">
                     <span className="font-semibold">Type:</span> {albumInfo['primary-type']}
                   </p>
+                )}
+                
+                {/* Streaming Links */}
+                {console.log('Checking streaming links...', albumInfo?.streamingLinks)}
+                {console.log('Has streamingLinks?', !!albumInfo?.streamingLinks)}
+                {console.log('Keys length:', albumInfo?.streamingLinks ? Object.keys(albumInfo.streamingLinks).length : 0)}
+                {albumInfo?.streamingLinks && Object.keys(albumInfo.streamingLinks).length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-gray-600 font-semibold mb-2">Listen on:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {albumInfo.streamingLinks.spotify && (
+                        <a
+                          href={albumInfo.streamingLinks.spotify}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          🎵 Spotify
+                        </a>
+                      )}
+                      {albumInfo.streamingLinks.appleMusic && (
+                        <a
+                          href={albumInfo.streamingLinks.appleMusic}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          🎵 Apple Music
+                        </a>
+                      )}
+                      {albumInfo.streamingLinks.youtube && (
+                        <a
+                          href={albumInfo.streamingLinks.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          ▶️ YouTube
+                        </a>
+                      )}
+                      {albumInfo.streamingLinks.deezer && (
+                        <a
+                          href={albumInfo.streamingLinks.deezer}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          🎵 Deezer
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -91,9 +91,23 @@ export interface Album {
     'track-count'?: number;
     tracks?: Track[];
   }>;
+  relations?: Array<{
+    type: string;
+    url?: {
+      resource: string;
+      id: string;
+    };
+  }>;
   // Custom fields
   coverArtUrl?: string;
   year?: string;
+  streamingLinks?: {
+    spotify?: string;
+    appleMusic?: string;
+    youtube?: string;
+    deezer?: string;
+    [key: string]: string | undefined;
+  };
 }
 
 export interface Track {
@@ -194,35 +208,44 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
       'secondary-types': rg['secondary-types'],
       disambiguation: rg.disambiguation,
       year: rg['first-release-date']?.split('-')[0]
-    })) || [];
+    })).filter((album: Album) => {
+      // Filter out albums without a valid release date (TBD, NA, or missing)
+      const releaseDate = album['first-release-date'];
+      return releaseDate && 
+             releaseDate !== 'TBD' && 
+             releaseDate !== 'NA' && 
+             releaseDate.trim() !== '' &&
+             album.year && 
+             !isNaN(parseInt(album.year));
+    }) || [];
     
-    // Return albums immediately without waiting for cover art
-    // Cover art will be loaded asynchronously in the background
-    fetchCoverArtForAlbums(albums);
+    // Fetch cover art for the first 10 albums to speed up initial load
+    const albumsToFetch = albums.slice(0, 10);
+    
+    for (const album of albumsToFetch) {
+      try {
+        const releaseResponse = await rateLimitedFetch(
+          `${MUSICBRAINZ_API_URL}/release?release-group=${album.id}&fmt=json&limit=1`
+        );
+        const releaseData = await releaseResponse.json();
+        const releaseId = releaseData.releases?.[0]?.id;
+        
+        if (releaseId) {
+          const coverArt = await getCoverArt(releaseId);
+          if (coverArt) {
+            album.coverArtUrl = coverArt;
+            console.log('Cover art found for:', album.title, coverArt);
+          }
+        }
+      } catch (error) {
+        console.log('Error fetching cover art for', album.title, error);
+      }
+    }
     
     return albums;
   } catch (error) {
     console.error('Error fetching albums:', error);
     return [];
-  }
-}
-
-// Fetch cover art in the background (non-blocking)
-async function fetchCoverArtForAlbums(albums: Album[]) {
-  for (const album of albums) {
-    try {
-      const releaseResponse = await rateLimitedFetch(
-        `${MUSICBRAINZ_API_URL}/release?release-group=${album.id}&fmt=json&limit=1`
-      );
-      const releaseData = await releaseResponse.json();
-      const releaseId = releaseData.releases?.[0]?.id;
-      
-      if (releaseId) {
-        album.coverArtUrl = await getCoverArt(releaseId);
-      }
-    } catch (error) {
-      console.log('Error fetching cover art for', album.title);
-    }
   }
 }
 
@@ -262,14 +285,60 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
 export async function getAlbumDetails(albumId: string): Promise<Album | null> {
   // Get the first release for this release-group
   const releaseResponse = await rateLimitedFetch(
-    `${MUSICBRAINZ_API_URL}/release?release-group=${albumId}&fmt=json&limit=1&inc=labels+recordings`
+    `${MUSICBRAINZ_API_URL}/release?release-group=${albumId}&fmt=json&limit=1&inc=labels+recordings+url-rels+release-group-level-rels`
   );
   const releaseData = await releaseResponse.json();
   const release = releaseData.releases?.[0];
   
-  if (!release) return null;
+  if (!release) {
+    console.log('No release found for release-group:', albumId);
+    return null;
+  }
+  
+  console.log('Full release data:', JSON.stringify(release, null, 2));
+  console.log('Release relations:', release.relations);
   
   const coverArtUrl = await getCoverArt(release.id);
+  
+  // Parse streaming links from URL relationships
+  const streamingLinks: Album['streamingLinks'] = {};
+  
+  // Check both release-level and release-group-level relations
+  const allRelations = [
+    ...(release.relations || []),
+  ];
+  
+  console.log('All relations to check:', allRelations);
+  
+  if (allRelations.length > 0) {
+    allRelations.forEach((rel: any) => {
+      console.log('Checking relation:', {
+        type: rel.type,
+        'type-id': rel['type-id'],
+        url: rel.url,
+        targetType: rel['target-type']
+      });
+      
+      // Check for URL relations
+      if (rel.url?.resource) {
+        const url = rel.url.resource;
+        console.log('Found URL:', url);
+        if (url.includes('spotify.com')) {
+          streamingLinks.spotify = url;
+        } else if (url.includes('music.apple.com') || url.includes('itunes.apple.com')) {
+          streamingLinks.appleMusic = url;
+        } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          streamingLinks.youtube = url;
+        } else if (url.includes('deezer.com')) {
+          streamingLinks.deezer = url;
+        }
+      }
+    });
+  } else {
+    console.log('No relations found in release');
+  }
+  
+  console.log('Final parsed streaming links:', streamingLinks);
   
   return {
     id: release.id,
@@ -277,7 +346,9 @@ export async function getAlbumDetails(albumId: string): Promise<Album | null> {
     'first-release-date': release.date,
     'label-info': release['label-info'],
     media: release.media,
+    relations: release.relations,
     coverArtUrl,
-    year: release.date?.split('-')[0]
+    year: release.date?.split('-')[0],
+    streamingLinks: Object.keys(streamingLinks).length > 0 ? streamingLinks : undefined
   };
 }
