@@ -14,8 +14,12 @@ async function getSpotifyToken(): Promise<string> {
   const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
 
+  console.log('Getting Spotify token...');
+  console.log('Client ID present:', !!clientId);
+  console.log('Client Secret present:', !!clientSecret);
+
   if (!clientId || !clientSecret) {
-    throw new Error('Spotify credentials not configured');
+    throw new Error('Spotify credentials not configured. Please set environment variables in Vercel.');
   }
 
   const response = await fetch(SPOTIFY_ACCOUNTS_URL, {
@@ -28,7 +32,9 @@ async function getSpotifyToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get Spotify access token');
+    const errorText = await response.text();
+    console.error('Spotify token error:', response.status, errorText);
+    throw new Error(`Failed to get Spotify access token: ${response.status}`);
   }
 
   const data = await response.json();
@@ -39,6 +45,7 @@ async function getSpotifyToken(): Promise<string> {
     throw new Error('Failed to retrieve access token');
   }
 
+  console.log('Successfully obtained Spotify token');
   return accessToken;
 }
 
@@ -51,6 +58,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Query parameter required' }, { status: 400 });
     }
 
+    console.log('Searching for artist:', query);
+    
     const token = await getSpotifyToken();
     const response = await fetch(
       `${SPOTIFY_API_URL}/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
@@ -63,15 +72,19 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to search artists');
+      const errorText = await response.text();
+      console.error('Spotify API error:', response.status, errorText);
+      throw new Error(`Spotify API returned ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Found artists:', data.artists?.items?.length || 0);
     return NextResponse.json(data.artists.items);
   } catch (error) {
     console.error('Error in search-artists API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { error: errorMessage, details: String(error) },
       { status: 500 }
     );
   }
