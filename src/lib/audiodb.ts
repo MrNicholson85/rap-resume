@@ -38,6 +38,10 @@ async function getSpotifyToken(): Promise<string> {
   accessToken = data.access_token;
   tokenExpiresAt = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 min before expiry
 
+  if (!accessToken) {
+    throw new Error('Failed to retrieve access token');
+  }
+
   return accessToken;
 }
 
@@ -78,6 +82,11 @@ export interface Album {
   album_type?: string; // album, single, compilation
   release_date?: string;
   total_tracks?: number;
+  disambiguation?: string; // Additional info to distinguish similar albums
+  media?: Array<{
+    'track-count'?: number;
+    format?: string;
+  }>;
   images?: Array<{
     url: string;
     height: number;
@@ -105,7 +114,7 @@ export interface Album {
 
 export interface Track {
   id: string;
-  name: string;
+  name?: string;
   title?: string; // For compatibility
   track_number?: number;
   duration_ms?: number;
@@ -119,16 +128,7 @@ export interface Track {
     name: string;
   }>;
   position?: number;
-  length?: number; // For compatibility with old code
-}
-
-export interface Track {
-  id: string;
-  title: string;
-  length?: number; // in milliseconds
-  position?: number;
-  position?: number;
-  length?: number; // For compatibility with old code
+  length?: number; // For compatibility with old code (in milliseconds)
 }
 
 // Helper function to generate streaming search URLs

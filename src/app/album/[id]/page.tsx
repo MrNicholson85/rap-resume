@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
 import { getAlbumTracks, getAlbumDetails, Album, Track } from '@/lib/audiodb';
 
 export default function AlbumPage() {
@@ -52,18 +53,19 @@ export default function AlbumPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white dark:bg-[#1F1F1F] transition-colors">
+      <ThemeToggle />
       <main className="container mx-auto px-4 py-8">
         <button
           onClick={() => router.back()}
-          className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          className="mb-6 px-4 py-2 bg-[#FF4500] hover:bg-[#ff7b3a] dark:bg-[#ff7b3a] dark:hover:bg-[#FFD700] text-white rounded transition-colors"
         >
           ← Back
         </button>
 
-        <div className="bg-white shadow-lg max-w-4xl mx-auto">
+        <div className="bg-white dark:bg-[#2e2e2e] shadow-lg max-w-4xl mx-auto">
           {/* Album Header */}
-          <div className="p-8 border-b-4 border-blue-600">
+          <div className="p-8 border-b-4 border-[#FF4500] dark:border-[#FFD700]">
             <div className="flex items-start gap-6">
               {/* Album Cover */}
               <div className="flex-shrink-0">
@@ -82,26 +84,26 @@ export default function AlbumPage() {
 
               {/* Album Info */}
               <div className="flex-1">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                <h1 className="text-4xl font-bold text-[#1F1F1F] dark:text-white mb-2">
                   {albumInfo?.title || albumInfo?.name || 'Loading...'}
                 </h1>
                 {albumInfo?.year && (
-                  <p className="text-xl text-blue-600 mb-3">
+                  <p className="text-xl text-[#FF4500] dark:text-[#FFD700] mb-3">
                     {albumInfo.year}
                   </p>
                 )}
                 {albumInfo?.artists && albumInfo.artists.length > 0 && (
-                  <p className="text-gray-600 text-lg mb-3">
+                  <p className="text-[#464646] dark:text-[#e0e0e0] text-lg mb-3">
                     <span className="font-semibold">Artist:</span> {albumInfo.artists.map(a => a.name).join(', ')}
                   </p>
                 )}
                 {albumInfo?.album_type && (
-                  <p className="text-gray-600">
+                  <p className="text-[#464646] dark:text-[#e0e0e0]">
                     <span className="font-semibold">Type:</span> {albumInfo.album_type}
                   </p>
                 )}
                 {albumInfo?.total_tracks && (
-                  <p className="text-gray-600">
+                  <p className="text-[#464646] dark:text-[#e0e0e0]">
                     <span className="font-semibold">Tracks:</span> {albumInfo.total_tracks}
                   </p>
                 )}
@@ -109,7 +111,7 @@ export default function AlbumPage() {
                 {/* Streaming Links */}
                 {albumInfo?.streamingLinks && Object.keys(albumInfo.streamingLinks).length > 0 && (
                   <div className="mt-4">
-                    <p className="text-gray-600 font-semibold mb-2">Listen on:</p>
+                    <p className="text-[#464646] dark:text-[#e0e0e0] font-semibold mb-2">Listen on:</p>
                     <div className="flex flex-wrap gap-2">
                       {albumInfo.streamingLinks.spotify && (
                         <a
@@ -160,13 +162,13 @@ export default function AlbumPage() {
 
           {/* Track List */}
           <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-blue-600"></span>
+            <h2 className="text-2xl font-bold text-[#1F1F1F] dark:text-white mb-6 flex items-center gap-2">
+              <span className="w-1 h-6 bg-[#FF4500] dark:bg-[#FFD700]"></span>
               Track Listing
             </h2>
 
             {loading ? (
-              <div className="text-center text-gray-600 py-8">
+              <div className="text-center text-[#464646] dark:text-[#e0e0e0] py-8">
                 Loading tracks...
               </div>
             ) : tracks.length > 0 ? (
@@ -174,38 +176,38 @@ export default function AlbumPage() {
                 {tracks.map((track) => (
                   <div
                     key={track.id}
-                    className="flex items-center justify-between p-4 hover:bg-gray-50 rounded transition-colors border-b last:border-b-0"
+                    className="flex items-center justify-between p-4 hover:bg-[#e0e0e0]/30 dark:hover:bg-[#1F1F1F] rounded transition-colors border-b border-[#e0e0e0] dark:border-[#464646] last:border-b-0"
                   >
                     <div className="flex items-center gap-4">
-                      <span className="text-gray-500 font-semibold w-8 text-right">
+                      <span className="text-[#464646] dark:text-[#e0e0e0] font-semibold w-8 text-right">
                         {track.track_number || track.position || '—'}
                       </span>
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-[#1F1F1F] dark:text-white">
                           {track.name || track.title}
                         </h3>
                         {track.artists && track.artists.length > 0 && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-[#464646] dark:text-[#e0e0e0]">
                             {track.artists.map(a => a.name).join(', ')}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span className="text-gray-600 text-sm">
+                    <span className="text-[#464646] dark:text-[#e0e0e0] text-sm">
                       {formatDuration(track.length || track.duration_ms)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-[#464646] dark:text-[#e0e0e0] py-8">
                 No track information available
               </div>
             )}
 
             {tracks.length > 0 && (
-              <div className="mt-6 pt-4 border-t">
-                <p className="text-gray-600">
+              <div className="mt-6 pt-4 border-t border-[#e0e0e0] dark:border-[#464646]">
+                <p className="text-[#464646] dark:text-[#e0e0e0]">
                   <span className="font-semibold">Total Tracks:</span> {tracks.length}
                 </p>
               </div>

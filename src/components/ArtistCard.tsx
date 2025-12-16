@@ -9,15 +9,17 @@ interface ArtistCardProps {
 }
 
 export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
+  const imageUrl = artist.images && artist.images.length > 0 ? artist.images[0].url : null;
+  
   return (
     <div
-      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer border border-gray-200 hover:border-blue-500"
+      className="bg-white dark:bg-[#2e2e2e] rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer border border-[#e0e0e0] dark:border-[#464646] hover:border-[#FF4500] dark:hover:border-[#FFD700]"
       onClick={onClick}
     >
-      <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
-        {artist.imageUrl ? (
+      <div className="relative h-48 bg-gradient-to-br from-[#FF4500] to-[#FFD700]">
+        {imageUrl ? (
           <Image
-            src={artist.imageUrl}
+            src={imageUrl}
             alt={artist.name}
             fill
             className="object-cover"
@@ -33,22 +35,22 @@ export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
         )}
       </div>
       <div className="p-5">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{artist.name}</h3>
-        {artist.disambiguation && (
-          <p className="text-gray-500 text-xs mb-2 italic">{artist.disambiguation}</p>
-        )}
+        <h3 className="text-xl font-bold text-[#1F1F1F] dark:text-white mb-2">{artist.name}</h3>
         {(artist.genres && artist.genres.length > 0) && (
-          <p className="text-blue-600 font-medium text-sm mb-1">{artist.genres[0].name}</p>
+          <p className="text-[#FF4500] dark:text-[#FFD700] font-medium text-sm mb-1">{artist.genres[0]}</p>
         )}
-        <div className="flex items-center gap-4 text-gray-600 text-sm mt-3">
-          {artist.country && (
+        {artist.type && (
+          <p className="text-[#464646] dark:text-[#e0e0e0] text-xs mb-2">{artist.type}</p>
+        )}
+        <div className="flex items-center gap-4 text-[#464646] dark:text-[#e0e0e0] text-sm mt-3">
+          {artist.popularity && (
             <span className="flex items-center gap-1">
-              📍 {artist.country}
+              ⭐ {artist.popularity}
             </span>
           )}
-          {artist['life-span']?.begin && (
+          {artist.followers?.total && (
             <span className="flex items-center gap-1">
-              📅 {artist['life-span'].begin.split('-')[0]}
+              👥 {artist.followers.total > 1000 ? `${Math.floor(artist.followers.total / 1000)}k` : artist.followers.total}
             </span>
           )}
         </div>
