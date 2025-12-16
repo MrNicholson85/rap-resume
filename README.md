@@ -212,13 +212,13 @@ getAlbumTracks(albumId: string): Promise<Track[]>
 
 ## 🔮 Future Enhancements
 
+- [x] **Dark mode toggle** - Fully implemented with custom color palette
 - [ ] Add search filters (genre, popularity, year)
 - [ ] Implement pagination for large discographies
 - [ ] Add album reviews/ratings
 - [ ] Export resume as PDF
 - [ ] Share resume via URL
 - [ ] Include related artists section
-- [ ] Dark mode toggle
 - [ ] Play preview clips directly in the app
 - [ ] Add top tracks section for artists
 - [ ] Include artist biography from additional sources
